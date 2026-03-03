@@ -43,10 +43,7 @@
             var translatedText = output.Item1;
 
             // Log after translation.
-            bool isOverwrite = await Translator.IsOverwrite(translationTask.OriginalText);
-            if (!isOverwrite)
-                await Translator.AddContexts();
-            await Translator.Log(translationTask.OriginalText, translatedText, isOverwrite);
+            await Translator.LogWithOverwriteDecision(translationTask.OriginalText, translatedText);
         }
     }
 

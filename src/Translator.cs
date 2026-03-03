@@ -17,6 +17,7 @@ namespace LiveCaptionsTranslator
 
         private static readonly Queue<string> pendingTextQueue = new();
         private static readonly TranslationTaskQueue translationTaskQueue = new();
+        private static readonly SemaphoreSlim logSemaphore = new(1, 1);
 
         public static AutomationElement? Window
         {
@@ -176,8 +177,7 @@ namespace LiveCaptionsTranslator
 
                     if (LogOnlyFlag)
                     {
-                        bool isOverwrite = await IsOverwrite(originalSnapshot);
-                        await LogOnly(originalSnapshot, isOverwrite);
+                        await LogOnlyWithOverwriteDecision(originalSnapshot);
                     }
                     else
                     {
@@ -355,6 +355,37 @@ namespace LiveCaptionsTranslator
 
             double similarity = TextUtil.Similarity(originalText, lastOriginalText);
             return similarity > TextUtil.SIM_THRESHOLD;
+        }
+
+        public static async Task LogWithOverwriteDecision(string originalText, string translatedText,
+            CancellationToken token = default)
+        {
+            await logSemaphore.WaitAsync(token);
+            try
+            {
+                bool isOverwrite = await IsOverwrite(originalText, token);
+                if (!isOverwrite)
+                    await AddContexts(token);
+                await Log(originalText, translatedText, isOverwrite, token);
+            }
+            finally
+            {
+                logSemaphore.Release();
+            }
+        }
+
+        public static async Task LogOnlyWithOverwriteDecision(string originalText, CancellationToken token = default)
+        {
+            await logSemaphore.WaitAsync(token);
+            try
+            {
+                bool isOverwrite = await IsOverwrite(originalText, token);
+                await LogOnly(originalText, isOverwrite, token);
+            }
+            finally
+            {
+                logSemaphore.Release();
+            }
         }
     }
 }

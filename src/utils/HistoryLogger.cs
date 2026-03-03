@@ -219,7 +219,7 @@ namespace LiveCaptionsTranslator.utils
             string selectQuery = @"
                 SELECT Timestamp, SourceText, TranslatedText, TargetLanguage, ApiUsed
                 FROM TranslationHistory
-                ORDER BY Timestamp DESC";
+                ORDER BY Timestamp ASC";
 
             using (var command = new SqliteCommand(selectQuery, GetConnection()))
             using (var reader = await command.ExecuteReaderAsync(token))
